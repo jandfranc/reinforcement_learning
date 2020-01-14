@@ -22,14 +22,14 @@ class BanditAgent:
         samples = []
         for machine_num in range(self.num_machines):
             # samples.append(np.random.normal(self.rewards[machine_num], self.variance[machine_num]))
-            samples.append(np.random.randn() / np.sqrt(self.variance[machine_num]) + self.rewards[machine_num])
+            samples.append(np.random.randn() / np.sqrt(self.lambda_[machine_num]) + self.rewards[machine_num])
         pulled_num = samples.index(max(samples))
         # Get reward
         curr_reward = self.machine_list[pulled_num].pull()
         self.iteration_list[pulled_num] += 1
         self.lambda_[pulled_num] += self.tau
         self.reward_sums[pulled_num] += curr_reward
-        self.rewards[pulled_num] = self.tau * self.reward_sums[pulled_num] / self.variance[pulled_num]
+        self.rewards[pulled_num] = self.tau * self.reward_sums[pulled_num] / self.lambda_[pulled_num]
 
         return curr_reward
 
@@ -46,7 +46,7 @@ def run_experiment(bandit, total_iter):
     reward_list = []
     avg_reward_list = []
     for run_exp_iterator in range(0, total_iter):
-        reward_list.append(bandit.action)
+        reward_list.append(bandit.action())
         avg_reward_list.append(np.mean(reward_list))
     return avg_reward_list
 
