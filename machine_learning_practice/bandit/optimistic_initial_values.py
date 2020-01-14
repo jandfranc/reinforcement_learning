@@ -3,26 +3,20 @@ import matplotlib.pyplot as plt
 
 
 class BanditAgent:
-    def __init__(self, epsilon, num_machines, actual_rewards_obj):
-        self.epsilon = epsilon
+    def __init__(self, initial_value, num_machines, actual_rewards_obj):
         self.num_machines = num_machines
         self.machine_list = []
         self.rewards = []
         self.actual_rewards = actual_rewards_obj
+        self.initial_val = initial_value
 
         for machine in range(num_machines):
             self.machine_list.append(SlotMachine(self.actual_rewards[machine]))
-            self.rewards.append(0)
+            self.rewards.append(self.initial_val)
         self.iteration_list = np.copy(self.rewards)
 
     def action(self):
-        rand_val = np.random.uniform(0.0, 1.0)
-        # Explore
-        if rand_val < self.epsilon:
-            pulled_num = np.random.randint(self.num_machines)
-        # Exploit
-        else:
-            pulled_num = self.rewards.index(max(self.rewards))
+        pulled_num = self.rewards.index(max(self.rewards))
         # Get reward
         curr_reward = self.machine_list[pulled_num].pull()
         # Update Mean
@@ -54,8 +48,8 @@ if __name__ == "__main__":
     iterations = 10000
     actual_rewards = [1, 2, 3, 4, 5]
 
-    learner1 = BanditAgent(0.1, 5, actual_rewards)
-    learner2 = BanditAgent(0.01, 5, actual_rewards)
+    learner1 = BanditAgent(20, 5, actual_rewards)
+    learner2 = BanditAgent(10, 5, actual_rewards)
     learner3 = BanditAgent(0, 5, actual_rewards)
 
     avg_rewards1 = run_experiment(learner1, iterations)
@@ -72,5 +66,5 @@ if __name__ == "__main__":
     plt.plot(avg_rewards1, color='b')
     plt.plot(avg_rewards2, color='g')
     plt.plot(avg_rewards3, color='r')
-    # plt.xscale('log')
+    plt.xscale('log')
     plt.show()

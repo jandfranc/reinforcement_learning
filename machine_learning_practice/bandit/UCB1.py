@@ -1,14 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from math import sqrt, log
 
 
 class BanditAgent:
-    def __init__(self, epsilon, num_machines, actual_rewards_obj):
-        self.epsilon = epsilon
+    def __init__(self, num_machines, actual_rewards_obj):
         self.num_machines = num_machines
         self.machine_list = []
         self.rewards = []
         self.actual_rewards = actual_rewards_obj
+        self.total_iterations = 1
 
         for machine in range(num_machines):
             self.machine_list.append(SlotMachine(self.actual_rewards[machine]))
@@ -16,17 +17,15 @@ class BanditAgent:
         self.iteration_list = np.copy(self.rewards)
 
     def action(self):
-        rand_val = np.random.uniform(0.0, 1.0)
-        # Explore
-        if rand_val < self.epsilon:
-            pulled_num = np.random.randint(self.num_machines)
-        # Exploit
-        else:
-            pulled_num = self.rewards.index(max(self.rewards))
+        ucb_x = [0] * self.num_machines
+        for reward_num, reward in enumerate(self.rewards):
+            ucb_x[reward_num] = reward + sqrt(2 * log(self.total_iterations) / (self.iteration_list[reward_num] + 1))
+        pulled_num = ucb_x.index(max(ucb_x))
         # Get reward
         curr_reward = self.machine_list[pulled_num].pull()
         # Update Mean
         self.iteration_list[pulled_num] += 1
+        self.total_iterations += 1
         one_over_iter = 1 / (self.iteration_list[pulled_num])
         self.rewards[pulled_num] = (1 - one_over_iter) * self.rewards[pulled_num] + one_over_iter * curr_reward
 
@@ -54,23 +53,12 @@ if __name__ == "__main__":
     iterations = 10000
     actual_rewards = [1, 2, 3, 4, 5]
 
-    learner1 = BanditAgent(0.1, 5, actual_rewards)
-    learner2 = BanditAgent(0.01, 5, actual_rewards)
-    learner3 = BanditAgent(0, 5, actual_rewards)
+    learner1 = BanditAgent(5, actual_rewards)
 
     avg_rewards1 = run_experiment(learner1, iterations)
-    avg_rewards2 = run_experiment(learner2, iterations)
-    avg_rewards3 = run_experiment(learner3, iterations)
 
     print(learner1.actual_rewards)
     print(learner1.rewards)
-    print(learner2.actual_rewards)
-    print(learner2.rewards)
-    print(learner3.actual_rewards)
-    print(learner3.rewards)
-
     plt.plot(avg_rewards1, color='b')
-    plt.plot(avg_rewards2, color='g')
-    plt.plot(avg_rewards3, color='r')
     # plt.xscale('log')
     plt.show()
