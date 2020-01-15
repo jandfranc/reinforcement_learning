@@ -36,9 +36,6 @@ class TicTacToe:
 class Learner:
 
     def __init__(self, epsilon, step_size):
-        self.win = 1
-        self.draw = 0
-        self.lose = 0
         self.epsilon = epsilon
         self.step_size = step_size
         self.state_dict = {}
@@ -119,9 +116,9 @@ def play_game(tictactoe, learner0, learner1):
         learner1.update_value_iterator(iter_states, reward=0)
     elif turn == 1:
         learner0.update_value_iterator(iter_states, reward=1)
-        learner1.update_value_iterator(iter_states, reward=-1)
+        learner1.update_value_iterator(iter_states, reward=0)
     else:
-        learner0.update_value_iterator(iter_states, reward=-1)
+        learner0.update_value_iterator(iter_states, reward=0)
         learner1.update_value_iterator(iter_states, reward=1)
 
 
@@ -161,7 +158,7 @@ if __name__ == '__main__':
     game = TicTacToe()
     learner0 = Learner(0.1, 0.1)
     learner1 = Learner(0.1, 0.1)
-    for i in range(100000):
+    for i in range(1000):
         play_game(game, learner0, learner1)
         game.clear_board()
         '''
