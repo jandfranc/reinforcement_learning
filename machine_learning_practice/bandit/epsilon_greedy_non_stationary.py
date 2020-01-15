@@ -32,7 +32,7 @@ class BanditAgent:
         one_over_iter = 1 / (self.iteration_list[pulled_num])
         self.rewards[pulled_num] = self.rewards[pulled_num] - self.step_size*(self.rewards[pulled_num] - curr_reward)
 
-        if sum(self.iteration_list) % 100 == 0:
+        if sum(self.iteration_list) % 1000 == 0:
             random.shuffle(self.actual_rewards)
             for reward, machine in zip(self.actual_rewards, self.machine_list):
                 machine.update_reward(reward)
@@ -56,6 +56,13 @@ def run_experiment(bandit, total_iter):
     for run_exp_iterator in range(0, total_iter):
         reward_list.append(bandit.action())
         avg_reward_list.append(np.mean(reward_list))
+        if run_exp_iterator % 10 == 0:
+            plt.plot(avg_reward_list, color='b')
+            # plt.xscale('log')
+            plt.grid(True, markevery=100)
+            plt.ion()
+            plt.show()
+            plt.pause(0.1)
     return avg_reward_list
 
 
@@ -63,9 +70,9 @@ if __name__ == "__main__":
     iterations = 10000
     actual_rewards = [1, 2, 3, 4, 5]
 
-    learner1 = BanditAgent(0.01, 0.1, 5, actual_rewards)
-    learner2 = BanditAgent(0.01, 0.5, 5, actual_rewards)
-    learner3 = BanditAgent(0.01, 1, 5, actual_rewards)
+    learner1 = BanditAgent(0.1, 1, 5, actual_rewards)
+    learner2 = BanditAgent(0.1, 0.5, 5, actual_rewards)
+    learner3 = BanditAgent(0.1, 1, 5, actual_rewards)
 
     avg_rewards1 = run_experiment(learner1, iterations)
     avg_rewards2 = run_experiment(learner2, iterations)
