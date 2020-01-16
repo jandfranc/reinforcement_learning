@@ -1,3 +1,5 @@
+import random
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -89,7 +91,13 @@ class Learner:
             for states in self.action_dict[str(current_state)]:
                 state_values.append(self.state_dict[str(states)])
             # print(state_values)
-            move = self.action_dict[str(current_state)][state_values.index(max(state_values))]
+            rand_val = max(state_values)
+            index_list = []
+            for iterator, value in enumerate(state_values):
+                if value == rand_val:
+                    index_list.append(iterator)
+
+            move = self.action_dict[str(current_state)][random.choice(index_list)]
 
         return move
 
@@ -116,9 +124,9 @@ def play_game(tictactoe, learner0, learner1):
         learner1.update_value_iterator(iter_states, reward=0)
     elif turn == 1:
         learner0.update_value_iterator(iter_states, reward=1)
-        learner1.update_value_iterator(iter_states, reward=0)
+        learner1.update_value_iterator(iter_states, reward=-1)
     else:
-        learner0.update_value_iterator(iter_states, reward=0)
+        learner0.update_value_iterator(iter_states, reward=-1)
         learner1.update_value_iterator(iter_states, reward=1)
 
 
@@ -151,22 +159,28 @@ def play_game_human(tic_tac_toe, learner_0, start):
             turn = 0
         print(tic_tac_toe.board)
         game_end, end_type = tic_tac_toe.check_win()
+        if end_type == 'draw':
+            learner_0.update_value_iterator(iter_states, reward=0)
+        elif turn == 1:
+            learner_0.update_value_iterator(iter_states, reward=1)
+        else:
+            learner_0.update_value_iterator(iter_states, reward=-1)
     print(end_type)
 
 
 if __name__ == '__main__':
     game = TicTacToe()
-    learner0 = Learner(0.1, 0.1)
     learner1 = Learner(0.1, 0.1)
-    for i in range(1000):
-        play_game(game, learner0, learner1)
+    learner2 = Learner(0.1, 0.1)
+    for i in range(1000000):
+        play_game(game, learner1, learner2)
         game.clear_board()
-        '''
-        plt.imshow(game.board)
-        plt.ion()
-        plt.show()
-        plt.pause(2)
-        '''
-    for i in range(1000):
-        play_game_human(game, learner0, 0)
-        play_game_human(game, learner1, 1)
+    with open('tic_tac_toe_1million_train.pkl', 'wb') as output:
+        pickle.dump(learner1, output, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(learner2, output, pickle.HIGHEST_PROTOCOL)
+
+    with open('tic_tac_toe_1million_train.pkl', 'rb') as learner:
+        learner10 = pickle.load(learner)
+        learner20 = pickle.load(learner)
+    play_game_human(game, learner10, 0)
+    play_game_human(game, learner20, 1)
