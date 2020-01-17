@@ -143,7 +143,7 @@ def play_game_human(tic_tac_toe, learner_0, start):
     game_end = False
     turn = start
     placers = [1, 2] * 5
-    game.board = np.full((3, 3), 0)
+    tic_tac_toe.board = np.full((3, 3), 0)
     while not game_end:
         if turn == 0:
             if str(tic_tac_toe.board) in learner_0.action_dict:
@@ -172,13 +172,13 @@ if __name__ == '__main__':
     game = TicTacToe()
     learner1 = Learner(0.1, 0.1)
     learner2 = Learner(0.1, 0.1)
-    for i in range(1000000):
+    '''
+    for i in range(10000):
         play_game(game, learner1, learner2)
         game.clear_board()
-    with open('tic_tac_toe_1million_train.pkl', 'wb') as output:
-        pickle.dump(learner1, output, pickle.HIGHEST_PROTOCOL)
-        pickle.dump(learner2, output, pickle.HIGHEST_PROTOCOL)
-
+    play_game_human(game, learner1, 0)
+    play_game_human(game, learner2, 1)
+    '''
     with open('tic_tac_toe_1million_train.pkl', 'rb') as learner:
         learner10 = pickle.load(learner)
         learner20 = pickle.load(learner)
