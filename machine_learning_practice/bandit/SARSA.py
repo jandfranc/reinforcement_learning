@@ -1,8 +1,5 @@
-import sys
 from time import time
-
 import numpy as np
-import matplotlib.pyplot as plt
 import random
 
 
@@ -66,7 +63,7 @@ class SARSAAgent:
         self.above_epsilon = above_epsilon
         self.possible_positions = []
 
-    def perform_iteration(self, iteration):
+    def perform_iteration(self):
         success_str = 'success'
         first_loop = True
         loop_check = 0
@@ -186,6 +183,6 @@ if __name__ == "__main__":
     SARSA_agent = SARSAAgent(world, 0.9, 0.1)
     t = time()
     for i in range(100000):
-        SARSA_agent.perform_iteration(i + 1)
+        SARSA_agent.perform_iteration()
     print(time() - t)
     print(SARSA_agent.get_policy())
