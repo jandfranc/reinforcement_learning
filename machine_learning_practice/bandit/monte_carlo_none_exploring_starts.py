@@ -67,7 +67,9 @@ class MonteCarloAgent:
     def perform_iteration(self):
         success_str = 'success'
         self.move_list = []
+        loop_check = 0
         while success_str != 'reset':
+            loop_check += 1
             self.potential_pos = self.robot_pos[:]
             if np.random.uniform(0.0, 1.0) < self.epsilon:
                 movement = random.choice(self.movement_list)
@@ -170,7 +172,7 @@ if __name__ == "__main__":
                    'fail': -1}
     world = GridWorld(reward_dict)
     MC_agent = MonteCarloAgent(world, 0.9, 0.1)
-    for i in range(100):
+    for i in range(1000):
         MC_agent.perform_iteration()
     print(np.max(MC_agent.base_world))
     plt.imshow(MC_agent.base_world)

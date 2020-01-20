@@ -1,7 +1,7 @@
 from time import time
 import numpy as np
 import random
-
+import matplotlib.pyplot as plt
 
 class GridWorld:
 
@@ -62,14 +62,62 @@ class SARSAAgent:
         self.gamma = gamma
         self.above_epsilon = above_epsilon
         self.possible_positions = []
+        self.theta = np.random.randn(25) / np.sqrt(25)
+        self.deltas = []
+        self.biggest_change = 0
+
+    def sa2x(self, s, a):
+        return np.array([
+            s[0] - 1 if a == 'U' else 0,
+            s[1] - 1.5 if a == 'U' else 0,
+            (s[0] * s[1] - 3) / 3 if a == 'U' else 0,
+            (s[0] * s[0] - 2) / 2 if a == 'U' else 0,
+            (s[1] * s[1] - 4.5) / 4.5 if a == 'U' else 0,
+            1 if a == 'U' else 0,
+            s[0] - 1 if a == 'D' else 0,
+            s[1] - 1.5 if a == 'D' else 0,
+            (s[0] * s[1] - 3) / 3 if a == 'D' else 0,
+            (s[0] * s[0] - 2) / 2 if a == 'D' else 0,
+            (s[1] * s[1] - 4.5) / 4.5 if a == 'D' else 0,
+            1 if a == 'D' else 0,
+            s[0] - 1 if a == 'L' else 0,
+            s[1] - 1.5 if a == 'L' else 0,
+            (s[0] * s[1] - 3) / 3 if a == 'L' else 0,
+            (s[0] * s[0] - 2) / 2 if a == 'L' else 0,
+            (s[1] * s[1] - 4.5) / 4.5 if a == 'L' else 0,
+            1 if a == 'L' else 0,
+            s[0] - 1 if a == 'R' else 0,
+            s[1] - 1.5 if a == 'R' else 0,
+            (s[0] * s[1] - 3) / 3 if a == 'R' else 0,
+            (s[0] * s[0] - 2) / 2 if a == 'R' else 0,
+            (s[1] * s[1] - 4.5) / 4.5 if a == 'R' else 0,
+            1 if a == 'R' else 0,
+            1
+        ])
+
+    def predict(self, s, a):
+        x = self.sa2x(s, a)
+        return self.theta.dot(x)
+
+    def grad(self, s, a):
+        return self.sa2x(s, a)
+
+    def get_state_dict(self, state):
+        state_dict = {}
+        for action in self.movement_list:
+            state_dict[action] = [self.predict(state, action), 0]
+        return state_dict
 
     def perform_iteration(self):
+        self.biggest_change = 0
         success_str = 'success'
         first_loop = True
         loop_check = 0
         while success_str != 'reset':
             loop_check += 1
+
             movement = self.choose_move_e_greedy()
+
             reward, success_str = self.grid_world.check_move(movement)
             reward = reward - 0.1
             if not first_loop:
@@ -93,72 +141,57 @@ class SARSAAgent:
             if success_str == 'reset':
                 self.final_value_update(reward, next_move_list)
                 self.robot_pos = self.original_pos[:]
-
+        self.deltas.append(self.biggest_change)
     def choose_move_e_greedy(self):
         previous_reward = float('-inf')
         action = None
         reward_list = []
         random.shuffle(self.movement_list)
         if random.uniform(0, 1) > self.above_epsilon:
-            if str(self.robot_pos) in self.action_expectations:
-                for move in self.movement_list:
-                    reward = self.action_expectations[str(self.robot_pos)][move][0]
-                    reward_list.append((reward, move))
-                    if reward > previous_reward:
-                        previous_reward = reward
-                        action = move
+            action_dict = self.get_state_dict(self.robot_pos)
+            for key in action_dict:
+                value = action_dict[key][0]
+                if value > previous_reward:
+                    previous_reward = value
+                    action = key
 
-
-            else:
-
-                action = random.choice(self.movement_list)
         else:
             action = random.choice(self.movement_list)
-        # print(previous_reward, action)
-        # print(reward_list)
-        # print(self.robot_pos)
-        # print('exiting')
-        # print('=============')
         return action
 
     def new_value_update(self, next_move_list, update_move_list):
 
         if str(update_move_list[1]) not in self.action_expectations:
-            self.action_expectations[str(update_move_list[1])] = {}
-            for move in self.movement_list:
-                self.action_expectations[str(update_move_list[1])][move] = [0, 0]
+            self.action_expectations[str(update_move_list[1])] = self.get_state_dict(update_move_list[1])
             self.possible_positions.append(update_move_list[1])
 
         if str(next_move_list[1]) not in self.action_expectations:
-            self.action_expectations[str(next_move_list[1])] = {}
-            for move in self.movement_list:
-                self.action_expectations[str(next_move_list[1])][move] = [0, 0]
-
+            self.action_expectations[str(next_move_list[1])] = self.get_state_dict(next_move_list[1])
             self.possible_positions.append(next_move_list[1])
 
         self.action_expectations[str(update_move_list[1])][update_move_list[2]][1] += 1
 
         step_size = 1 / self.action_expectations[str(update_move_list[1])][update_move_list[2]][1]
-        update_pos = str(update_move_list[1])
-        update_return = self.action_expectations[str(update_pos)][update_move_list[2]][0]
-        next_return = self.action_expectations[str(next_move_list[1])][next_move_list[2]][0]
-        self.action_expectations[update_pos][update_move_list[2]][0] = \
-            update_return + step_size * (next_move_list[0] + self.gamma * next_return - update_return)
+        old_theta = self.theta.copy()
+        self.theta += step_size * (
+                next_move_list[0] + self.gamma * self.predict(next_move_list[1], next_move_list[2]) -
+                self.predict(update_move_list[1], update_move_list[2])) * \
+                      self.grad(update_move_list[1], update_move_list[2])
+        self.biggest_change = max(self.biggest_change, np.abs(self.theta - old_theta).sum())
 
     def final_value_update(self, reward, update_move_list):
         if str(update_move_list[1]) not in self.action_expectations:
             self.action_expectations[str(update_move_list[1])] = {}
             for move in self.movement_list:
-                self.action_expectations[str(update_move_list[1])][move] = [0, 0]
+                self.action_expectations[str(update_move_list[1])][move] = [self.predict(update_move_list[1], move), 0]
 
         self.action_expectations[str(update_move_list[1])][update_move_list[2]][1] += 1
 
         step_size = 1 / self.action_expectations[str(update_move_list[1])][update_move_list[2]][1]
-        update_pos = str(update_move_list[1])
-        update_return = self.action_expectations[str(update_pos)][update_move_list[2]][0]
-        next_return = 0
-        self.action_expectations[update_pos][update_move_list[2]][0] = \
-            update_return + step_size * (reward + self.gamma * next_return - update_return)
+        old_theta = self.theta.copy()
+        self.theta += step_size * (reward - self.predict(update_move_list[1], update_move_list[2])) * \
+            self.grad(update_move_list[1], update_move_list[2])
+        self.biggest_change = max(self.biggest_change, np.abs(self.theta - old_theta).sum())
 
     def get_policy(self):
         policy_dict = {}
@@ -182,7 +215,10 @@ if __name__ == "__main__":
     world = GridWorld(reward_dict)
     SARSA_agent = SARSAAgent(world, 0.9, 0.1)
     t = time()
-    for i in range(1000):
+    for i in range(500):
         SARSA_agent.perform_iteration()
+
+    plt.plot(SARSA_agent.deltas)
+    plt.show()
     print(time() - t)
     print(SARSA_agent.get_policy())
